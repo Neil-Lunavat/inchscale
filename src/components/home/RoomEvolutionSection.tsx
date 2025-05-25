@@ -10,7 +10,7 @@ if (typeof window !== "undefined") {
     gsap.registerPlugin(ScrollTrigger);
 }
 
-// Room evolution phases
+// Room evolution phases - simplified and more reliable
 const phases = [
     {
         id: 1,
@@ -18,8 +18,8 @@ const phases = [
         subtitle: "The Beginning",
         description:
             "Every masterpiece starts with potential. Raw concrete, endless possibilities.",
-        image: "/images/room-evolution/phase-1-raw.png",
-        position: "left",
+        image: "/images/room-evolution/phase-1.png", // Raw concrete space
+        position: "left" as const,
     },
     {
         id: 2,
@@ -27,8 +27,8 @@ const phases = [
         subtitle: "The Planning",
         description:
             "Where architecture meets artistry. Every line drawn with intention.",
-        image: "/images/room-evolution/phase-2-blueprint.png",
-        position: "right",
+        image: "/images/room-evolution/phase-2.png", // Blueprint/planning phase
+        position: "right" as const,
     },
     {
         id: 3,
@@ -36,8 +36,8 @@ const phases = [
         subtitle: "The Building",
         description:
             "Materials breathe life into vision. Craftsmanship meets innovation.",
-        image: "/images/room-evolution/phase-3-construction.png",
-        position: "left",
+        image: "/images/room-evolution/phase-3.png", // Construction phase
+        position: "left" as const,
     },
     {
         id: 4,
@@ -45,8 +45,8 @@ const phases = [
         subtitle: "The Transformation",
         description:
             "Where your story meets interior excellence. This is InchScale.",
-        image: "/images/room-evolution/phase-4-complete.png",
-        position: "center",
+        image: "/images/room-evolution/phase-4.png", // Finished luxury room
+        position: "center" as const,
     },
 ];
 
@@ -54,7 +54,7 @@ export default function RoomEvolutionSection() {
     const sectionRef = useRef<HTMLElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [currentPhase, setCurrentPhase] = useState(0);
-    const [isInView, setIsInView] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -63,175 +63,124 @@ export default function RoomEvolutionSection() {
         const container = containerRef.current;
         if (!section || !container) return;
 
-        // Set up the main timeline
-        const mainTimeline = gsap.timeline({
-            scrollTrigger: {
-                trigger: section,
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1,
-                pin: true,
-                pinSpacing: true,
-                onUpdate: (self) => {
-                    const progress = self.progress;
-                    const phaseIndex = Math.floor(
-                        progress * (phases.length - 1)
-                    );
+        // Set initial states
+        gsap.set(".phase-content", { opacity: 0, y: 50 });
+        gsap.set(".phase-content:first-child", { opacity: 1, y: 0 });
 
-                    if (
-                        phaseIndex !== currentPhase &&
-                        phaseIndex < phases.length
-                    ) {
-                        setCurrentPhase(phaseIndex);
-                    }
-                },
-                onEnter: () => setIsInView(true),
-                onLeave: () => setIsInView(false),
-                onEnterBack: () => setIsInView(true),
-                onLeaveBack: () => setIsInView(false),
+        // Create main ScrollTrigger
+        const scrollTrigger = ScrollTrigger.create({
+            trigger: section,
+            start: "top top",
+            end: "bottom bottom",
+            pin: true,
+            pinSpacing: true,
+            scrub: 1,
+            onUpdate: (self) => {
+                if (isAnimating) return;
+
+                const progress = self.progress;
+                const newPhase = Math.min(
+                    Math.floor(progress * phases.length),
+                    phases.length - 1
+                );
+
+                if (newPhase !== currentPhase) {
+                    changePhase(newPhase);
+                }
             },
         });
 
-        // Image morphing animation
-        const images = container.querySelectorAll(".evolution-image");
+        return () => {
+            scrollTrigger.kill();
+        };
+    }, [currentPhase, isAnimating]);
 
-        images.forEach((img, index) => {
-            if (index === 0) return; // First image starts visible
+    const changePhase = (newPhase: number) => {
+        if (newPhase === currentPhase || isAnimating) return;
 
-            const startProgress = index / (phases.length - 1);
-            const endProgress = Math.min(startProgress + 0.1, 1);
+        setIsAnimating(true);
 
-            gsap.set(img, {
-                clipPath: "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)",
-                scale: 1.1,
-            });
+        const currentContent = document.querySelector(
+            `.phase-content[data-phase="${currentPhase}"]`
+        );
+        const newContent = document.querySelector(
+            `.phase-content[data-phase="${newPhase}"]`
+        );
 
-            mainTimeline.to(
-                img,
-                {
-                    clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
-                    scale: 1,
-                    duration: 0.3,
-                    ease: "power2.inOut",
-                },
-                startProgress
-            );
+        const tl = gsap.timeline({
+            onComplete: () => {
+                setCurrentPhase(newPhase);
+                setIsAnimating(false);
+            },
         });
 
-        // Texture overlay animation for premium feel
-        const textureOverlay = container.querySelector(".texture-overlay");
-        if (textureOverlay) {
-            mainTimeline.to(
-                textureOverlay,
-                {
-                    opacity: 0.1,
-                    scale: 1.05,
-                    rotation: 1,
-                    duration: 1,
-                    ease: "none",
-                },
-                0
-            );
+        // Fade out current content
+        if (currentContent) {
+            tl.to(currentContent, {
+                opacity: 0,
+                y: -30,
+                duration: 0.3,
+                ease: "power2.in",
+            });
         }
 
-        // Text animations
-        const textElements = container.querySelectorAll(".phase-text");
-        textElements.forEach((text, index) => {
-            const startProgress = index / (phases.length - 1);
+        // Fade in new content
+        if (newContent) {
+            tl.fromTo(
+                newContent,
+                { opacity: 0, y: 50 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.5,
+                    ease: "power2.out",
+                },
+                "-=0.1"
+            );
+        }
+    };
 
-            gsap.set(text, {
-                opacity: 0,
-                x:
-                    phases[index].position === "right"
-                        ? 100
-                        : phases[index].position === "left"
-                        ? -100
-                        : 0,
-                y: 50,
-            });
-
-            if (index === 0) {
-                gsap.set(text, { opacity: 1, x: 0, y: 0 });
-            } else {
-                mainTimeline.to(
-                    text,
-                    {
-                        opacity: 1,
-                        x: 0,
-                        y: 0,
-                        duration: 0.2,
-                        ease: "power2.out",
-                    },
-                    startProgress + 0.05
-                );
-
-                if (index > 0) {
-                    mainTimeline.to(
-                        textElements[index - 1],
-                        {
-                            opacity: 0,
-                            x:
-                                phases[index - 1].position === "right"
-                                    ? -50
-                                    : 50,
-                            y: -30,
-                            duration: 0.15,
-                            ease: "power2.in",
-                        },
-                        startProgress
-                    );
-                }
-            }
-        });
-
-        return () => {
-            ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-        };
-    }, [currentPhase]);
+    const goToPhase = (phaseIndex: number) => {
+        if (phaseIndex !== currentPhase && !isAnimating) {
+            changePhase(phaseIndex);
+        }
+    };
 
     return (
         <section
             ref={sectionRef}
-            className="relative h-[400vh] bg-primary overflow-hidden"
+            className="relative h-[400vh] bg-dark overflow-hidden"
         >
             <div
                 ref={containerRef}
                 className="sticky top-0 h-screen w-full flex items-center justify-center"
             >
-                {/* Background Images */}
+                {/* Background Images with smooth transitions */}
                 <div className="absolute inset-0">
                     {phases.map((phase, index) => (
                         <div
                             key={phase.id}
-                            className="evolution-image absolute inset-0"
-                            style={{ zIndex: phases.length - index }}
+                            className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                                index === currentPhase
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                            }`}
+                            style={{ zIndex: index === currentPhase ? 2 : 1 }}
                         >
                             <Image
                                 src={phase.image}
                                 alt={phase.title}
                                 fill
                                 className="object-cover"
-                                quality={95}
+                                quality={90}
                                 priority={index < 2}
+                                sizes="100vw"
                             />
                         </div>
                     ))}
 
-                    {/* Premium Texture Overlay */}
-                    <div className="texture-overlay absolute inset-0 opacity-20 mix-blend-overlay pointer-events-none">
-                        <div
-                            className="w-full h-full"
-                            style={{
-                                backgroundImage: `
-                                    radial-gradient(circle at 25% 25%, rgba(140, 108, 85, 0.1) 0%, transparent 50%),
-                                    radial-gradient(circle at 75% 75%, rgba(46, 42, 38, 0.1) 0%, transparent 50%),
-                                    linear-gradient(45deg, transparent 49%, rgba(240, 233, 225, 0.03) 50%, transparent 51%)
-                                `,
-                                backgroundSize:
-                                    "100px 100px, 150px 150px, 20px 20px",
-                            }}
-                        />
-                    </div>
+                    {/* Overlay for better text readability */}
+                    <div className="absolute inset-0 bg-black/40 z-3" />
                 </div>
 
                 {/* Content Overlay */}
@@ -239,25 +188,26 @@ export default function RoomEvolutionSection() {
                     {phases.map((phase, index) => (
                         <div
                             key={phase.id}
-                            className={`phase-text absolute inset-0 flex items-center ${
+                            data-phase={index}
+                            className={`phase-content absolute inset-0 flex items-center ${
                                 phase.position === "left"
                                     ? "justify-start"
                                     : phase.position === "right"
                                     ? "justify-end"
                                     : "justify-center"
                             }`}
+                            style={{
+                                opacity: index === currentPhase ? 1 : 0,
+                                pointerEvents:
+                                    index === currentPhase ? "auto" : "none",
+                            }}
                         >
                             <div
-                                className={`max-w-lg p-8 rounded-lg backdrop-blur-sm bg-white/10 border border-white/20 shadow-2xl ${
+                                className={`max-w-lg p-8 rounded-lg backdrop-blur-md bg-white/10 border border-white/20 shadow-2xl ${
                                     phase.position === "center"
                                         ? "text-center"
                                         : ""
                                 }`}
-                                style={{
-                                    background: `linear-gradient(135deg, 
-                                        rgba(240, 233, 225, 0.15) 0%, 
-                                        rgba(140, 108, 85, 0.1) 100%)`,
-                                }}
                             >
                                 <div className="text-sm font-medium text-white/80 tracking-wider uppercase mb-2">
                                     {phase.subtitle}
@@ -270,31 +220,33 @@ export default function RoomEvolutionSection() {
                                 </p>
 
                                 {/* Progress Indicator */}
-                                <div className="flex items-center space-x-2 mb-6">
+                                <div className="flex items-center justify-center space-x-2 mb-6">
                                     {phases.map((_, i) => (
-                                        <div
+                                        <button
                                             key={i}
-                                            className={`h-1 rounded-full transition-all duration-500 ${
-                                                i <= index
+                                            onClick={() => goToPhase(i)}
+                                            className={`h-2 rounded-full transition-all duration-300 cursor-pointer hover:scale-110 ${
+                                                i <= currentPhase
                                                     ? "bg-white w-8"
                                                     : "bg-white/30 w-4"
                                             }`}
+                                            aria-label={`Go to phase ${i + 1}`}
                                         />
                                     ))}
                                 </div>
 
                                 {/* CTA for final phase */}
                                 {index === phases.length - 1 && (
-                                    <div className="flex flex-col sm:flex-row gap-4">
+                                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                         <Link
                                             href="/book-consultation"
-                                            className="bg-accent text-white px-8 py-4 text-lg font-medium hover:bg-dark transition-all duration-300 transform hover:scale-105 shadow-lg"
+                                            className="bg-accent text-white px-8 py-4 text-lg font-medium hover:bg-accent/90 transition-all duration-300 transform hover:scale-105 shadow-lg text-center"
                                         >
                                             Start Your Transformation
                                         </Link>
                                         <Link
                                             href="/projects"
-                                            className="border-2 border-white text-white px-8 py-4 text-lg font-medium hover:bg-white hover:text-dark transition-all duration-300 transform hover:scale-105"
+                                            className="border-2 border-white text-white px-8 py-4 text-lg font-medium hover:bg-white hover:text-dark transition-all duration-300 transform hover:scale-105 text-center"
                                         >
                                             View Our Work
                                         </Link>
@@ -305,11 +257,40 @@ export default function RoomEvolutionSection() {
                     ))}
                 </div>
 
-                {/* Scroll Indicator */}
+                {/* Manual Navigation Dots */}
+                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+                    <div className="flex space-x-3">
+                        {phases.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => goToPhase(index)}
+                                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                                    index === currentPhase
+                                        ? "bg-white scale-125"
+                                        : "bg-white/50 hover:bg-white/70"
+                                }`}
+                                aria-label={`Go to phase ${index + 1}`}
+                            />
+                        ))}
+                    </div>
+                </div>
+
+                {/* Phase Counter */}
+                <div className="absolute top-8 right-8 z-20">
+                    <div className="text-white/80 font-mono text-sm bg-black/20 backdrop-blur-sm px-4 py-2 rounded-lg">
+                        <span className="text-xl font-bold text-white">
+                            {String(currentPhase + 1).padStart(2, "0")}
+                        </span>
+                        <span className="mx-2">/</span>
+                        <span>{String(phases.length).padStart(2, "0")}</span>
+                    </div>
+                </div>
+
+                {/* Scroll Hint */}
                 {currentPhase < phases.length - 1 && (
-                    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+                    <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20">
                         <div className="flex flex-col items-center text-white/70">
-                            <span className="text-sm tracking-widest uppercase mb-4">
+                            <span className="text-sm tracking-widest uppercase mb-4 animate-pulse">
                                 Scroll to Transform
                             </span>
                             <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center">
@@ -318,17 +299,6 @@ export default function RoomEvolutionSection() {
                         </div>
                     </div>
                 )}
-
-                {/* Phase Counter */}
-                <div className="absolute top-8 right-8 z-20">
-                    <div className="text-white/80 font-mono text-sm">
-                        <span className="text-xl font-bold text-white">
-                            {String(currentPhase + 1).padStart(2, "0")}
-                        </span>
-                        <span className="mx-2">/</span>
-                        <span>{String(phases.length).padStart(2, "0")}</span>
-                    </div>
-                </div>
             </div>
         </section>
     );

@@ -404,3 +404,79 @@
         }
     }
 }
+
+/* Ensure smooth loading transition */
+.main-content {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+}
+
+.main-content.loaded {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Fix for ScrollTrigger pinning issues */
+.gsap-pin-spacer {
+    overflow: visible !important;
+}
+
+/* Improve room evolution section performance */
+.room-evolution {
+    will-change: transform;
+}
+
+/* Ensure proper z-index stacking */
+.sticky {
+    z-index: 10;
+}
+
+/* Fix potential image loading issues */
+img[data-nimg="fill"] {
+    object-fit: cover;
+    object-position: center;
+}
+
+/* Smooth scroll for better UX */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Prevent horizontal scroll issues */
+body {
+    overflow-x: hidden;
+}
+
+/* Fix for mobile viewport issues */
+@media (max-width: 768px) {
+    .h-screen {
+        height: 100vh;
+        height: 100dvh; /* Use dynamic viewport height on mobile */
+    }
+
+    .sticky {
+        position: -webkit-sticky;
+        position: sticky;
+    }
+}
+
+/* Performance improvements for animations */
+.phase-content {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+/* Ensure text is readable during transitions */
+.backdrop-blur-md {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* Fix for potential button click issues */
+button {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+}
