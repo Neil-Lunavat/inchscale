@@ -72,13 +72,10 @@ export default function CTASection() {
     return (
         <section
             ref={sectionRef}
-            className="relative py-20 lg:py-32 overflow-hidden"
+            className="relative py-20 lg:py-32 overflow-hidden bg-gradient-to-br from-dark via-accent to-dark"
         >
             {/* Background with Pattern */}
-            <div
-                ref={backgroundRef}
-                className="absolute inset-0 bg-gradient-to-br from-dark via-accent to-dark"
-            >
+            <div ref={backgroundRef} className="absolute inset-0 ">
                 <div className="absolute inset-0 opacity-10">
                     <div className="absolute top-10 left-10 w-32 h-32 border border-white/20 rounded-full" />
                     <div className="absolute top-20 right-20 w-24 h-24 border border-white/20 rounded-full" />

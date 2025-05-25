@@ -4,10 +4,8 @@ import { useEffect, useState } from "react";
 import LoadingScreen from "@/components/animations/LoadingScreen";
 import HeroSection from "@/components/home/HeroSection";
 import RoomEvolutionSection from "@/components/home/RoomEvolutionSection";
-import AboutPreview from "@/components/home/AboutPreview";
 import ServicesOverview from "@/components/home/ServicesOverview";
 import WhyChooseUs from "@/components/home/WhyChooseUs";
-import ProjectsShowcase from "@/components/home/ProjectsShowcase";
 import ProcessSection from "@/components/home/ProcessSection";
 import CTASection from "@/components/home/CTASection";
 
@@ -37,9 +35,6 @@ export default function HomePage() {
                 {/* Hero Section */}
                 <HeroSection />
 
-                {/* About Preview - Brief intro */}
-                <AboutPreview />
-
                 {/* Services Overview */}
                 <ServicesOverview />
 
@@ -48,9 +43,6 @@ export default function HomePage() {
 
                 {/* Why Choose Us */}
                 <WhyChooseUs />
-
-                {/* Featured Projects */}
-                <ProjectsShowcase />
 
                 {/* Process Overview */}
                 <ProcessSection />

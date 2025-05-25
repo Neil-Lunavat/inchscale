@@ -3,70 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-if (typeof window !== "undefined") {
-    gsap.registerPlugin(ScrollTrigger);
-}
+import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 
 export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const headerRef = useRef<HTMLHeadElement>(null);
-    const logoRef = useRef<HTMLDivElement>(null);
-    const navRef = useRef<HTMLElement>(null);
+    const [isScrolled, setIsScrolled] = useState(false);
+    const { scrollY } = useScroll();
 
-    useEffect(() => {
-        if (typeof window === "undefined") return;
-
-        const header = headerRef.current;
-        const logo = logoRef.current;
-        const nav = navRef.current;
-
-        if (!header || !logo || !nav) return;
-
-        // Initial header animation
-        gsap.set([logo, nav], { opacity: 0, y: -20 });
-
-        const tl = gsap.timeline({ delay: 4 }); // Start after loading screen
-        tl.to([logo, nav], {
-            opacity: 1,
-            y: 0,
-            duration: 1,
-            stagger: 0.2,
-            ease: "power2.out",
-        });
-
-        // Header background on scroll
-        ScrollTrigger.create({
-            trigger: header,
-            start: "top top",
-            endTrigger: "body",
-            end: "bottom top",
-            onUpdate: (self) => {
-                const progress = self.progress;
-                if (progress > 0.1) {
-                    gsap.to(header, {
-                        backgroundColor: "rgba(240, 233, 225, 0.95)",
-                        backdropFilter: "blur(10px)",
-                        boxShadow: "0 2px 20px rgba(46, 42, 38, 0.1)",
-                        duration: 0.3,
-                    });
-                } else {
-                    gsap.to(header, {
-                        backgroundColor: "transparent",
-                        backdropFilter: "none",
-                        boxShadow: "none",
-                        duration: 0.3,
-                    });
-                }
-            },
-        });
-
-        return () => {
-            ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-        };
-    }, []);
+    // Monitor scroll position
+    useMotionValueEvent(scrollY, "change", (latest) => {
+        setIsScrolled(latest > 50);
+    });
 
     const navItems = [
         { name: "Home", href: "/" },
@@ -75,15 +22,109 @@ export default function Header() {
         { name: "Contact", href: "/contact" },
     ];
 
+    // Animation variants
+    const headerVariants = {
+        initial: {
+            backgroundColor: "rgba(240, 233, 225, 0.95)",
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 2px 20px rgba(46, 42, 38, 0.1)",
+        },
+        scrolled: {
+            backgroundColor: "rgba(240, 233, 225, 0.95)",
+            backdropFilter: "blur(15px)",
+            boxShadow: "0 4px 30px rgba(46, 42, 38, 0.15)",
+        },
+    };
+
+    const logoVariants = {
+        hidden: { opacity: 0, y: -20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                delay: 4.2, // After loading screen
+                duration: 1,
+                ease: "easeOut",
+            },
+        },
+    };
+
+    const navVariants = {
+        hidden: { opacity: 0, y: -20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                delay: 4.4, // Slight stagger after logo
+                duration: 1,
+                ease: "easeOut",
+            },
+        },
+    };
+
+    const mobileMenuVariants = {
+        closed: {
+            opacity: 0,
+            height: 0,
+            transition: {
+                duration: 0.3,
+                ease: "easeInOut",
+            },
+        },
+        open: {
+            opacity: 1,
+            height: "auto",
+            transition: {
+                duration: 0.3,
+                ease: "easeInOut",
+            },
+        },
+    };
+
+    const menuItemVariants = {
+        closed: { opacity: 0, x: -20 },
+        open: (index: number) => ({
+            opacity: 1,
+            x: 0,
+            transition: {
+                delay: index * 0.1,
+                duration: 0.3,
+                ease: "easeOut",
+            },
+        }),
+    };
+
+    const hamburgerLineVariants = {
+        closed: { rotate: 0, y: 0 },
+        open: { rotate: 45, y: 6 },
+    };
+
+    const hamburgerLine2Variants = {
+        closed: { opacity: 1 },
+        open: { opacity: 0 },
+    };
+
+    const hamburgerLine3Variants = {
+        closed: { rotate: 0, y: 0 },
+        open: { rotate: -45, y: -6 },
+    };
+
     return (
-        <header
-            ref={headerRef}
-            className="fixed top-0 left-0 w-full z-50 transition-all duration-300"
+        <motion.header
+            className="fixed top-0 left-0 w-full z-50"
+            variants={headerVariants}
+            initial="initial"
+            animate={isScrolled ? "scrolled" : "initial"}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center py-4">
                     {/* Logo */}
-                    <div ref={logoRef}>
+                    <motion.div
+                        variants={logoVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
                         <Link href="/" className="flex items-center space-x-3">
                             <Image
                                 src="/images/icons/logo.png"
@@ -101,79 +142,124 @@ export default function Header() {
                                 </p>
                             </div>
                         </Link>
-                    </div>
+                    </motion.div>
 
                     {/* Desktop Navigation */}
-                    <nav ref={navRef} className="hidden md:flex space-x-8">
-                        {navItems.map((item) => (
-                            <Link
+                    <motion.nav
+                        className="hidden md:flex space-x-8"
+                        variants={navVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        {navItems.map((item, index) => (
+                            <motion.div
                                 key={item.name}
-                                href={item.href}
-                                className="text-dark hover:text-accent transition-colors duration-300 font-medium tracking-wide relative group"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                             >
-                                {item.name}
-                                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-accent transition-all duration-300 group-hover:w-full"></span>
-                            </Link>
+                                <Link
+                                    href={item.href}
+                                    className="text-dark hover:text-accent transition-colors duration-300 font-medium tracking-wide relative group"
+                                >
+                                    {item.name}
+                                    <motion.span
+                                        className="absolute bottom-0 left-0 h-0.5 bg-accent"
+                                        initial={{ width: 0 }}
+                                        whileHover={{ width: "100%" }}
+                                        transition={{
+                                            duration: 0.3,
+                                            ease: "easeInOut",
+                                        }}
+                                    />
+                                </Link>
+                            </motion.div>
                         ))}
-                        <Link
-                            href="/book-consultation"
-                            className="btn-primary px-6 py-2 rounded-none text-sm"
+                        <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                         >
-                            Book Consultation
-                        </Link>
-                    </nav>
+                            <Link
+                                href="/book-consultation"
+                                className="btn-primary px-6 py-2 rounded-none text-sm"
+                            >
+                                Book Consultation
+                            </Link>
+                        </motion.div>
+                    </motion.nav>
 
                     {/* Mobile Menu Button */}
-                    <button
+                    <motion.button
                         className="md:hidden flex flex-col justify-center items-center w-8 h-8 space-y-1"
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                         aria-label="Toggle menu"
+                        variants={navVariants}
+                        initial="hidden"
+                        animate="visible"
+                        whileTap={{ scale: 0.9 }}
                     >
-                        <span
-                            className={`w-6 h-0.5 bg-dark transition-all duration-300 ${
-                                isMenuOpen ? "rotate-45 translate-y-1.5" : ""
-                            }`}
+                        <motion.span
+                            className="w-6 h-0.5 bg-dark"
+                            variants={hamburgerLineVariants}
+                            animate={isMenuOpen ? "open" : "closed"}
+                            transition={{ duration: 0.3 }}
                         />
-                        <span
-                            className={`w-6 h-0.5 bg-dark transition-all duration-300 ${
-                                isMenuOpen ? "opacity-0" : ""
-                            }`}
+                        <motion.span
+                            className="w-6 h-0.5 bg-dark"
+                            variants={hamburgerLine2Variants}
+                            animate={isMenuOpen ? "open" : "closed"}
+                            transition={{ duration: 0.3 }}
                         />
-                        <span
-                            className={`w-6 h-0.5 bg-dark transition-all duration-300 ${
-                                isMenuOpen ? "-rotate-45 -translate-y-1.5" : ""
-                            }`}
+                        <motion.span
+                            className="w-6 h-0.5 bg-dark"
+                            variants={hamburgerLine3Variants}
+                            animate={isMenuOpen ? "open" : "closed"}
+                            transition={{ duration: 0.3 }}
                         />
-                    </button>
+                    </motion.button>
                 </div>
 
                 {/* Mobile Navigation */}
-                <div
-                    className={`md:hidden transition-all duration-300 overflow-hidden ${
-                        isMenuOpen ? "max-h-96 pb-6" : "max-h-0"
-                    }`}
+                <motion.div
+                    className="md:hidden overflow-hidden"
+                    variants={mobileMenuVariants}
+                    initial="closed"
+                    animate={isMenuOpen ? "open" : "closed"}
                 >
-                    <nav className="flex flex-col space-y-4">
-                        {navItems.map((item) => (
-                            <Link
+                    <nav className="flex flex-col space-y-4 pb-6">
+                        {navItems.map((item, index) => (
+                            <motion.div
                                 key={item.name}
-                                href={item.href}
-                                className="text-dark hover:text-accent transition-colors duration-300 font-medium"
+                                custom={index}
+                                variants={menuItemVariants}
+                                initial="closed"
+                                animate={isMenuOpen ? "open" : "closed"}
+                            >
+                                <Link
+                                    href={item.href}
+                                    className="text-dark hover:text-accent transition-colors duration-300 font-medium"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    {item.name}
+                                </Link>
+                            </motion.div>
+                        ))}
+                        <motion.div
+                            custom={navItems.length}
+                            variants={menuItemVariants}
+                            initial="closed"
+                            animate={isMenuOpen ? "open" : "closed"}
+                        >
+                            <Link
+                                href="/book-consultation"
+                                className="btn-primary px-6 py-2 rounded-none text-sm inline-block text-center"
                                 onClick={() => setIsMenuOpen(false)}
                             >
-                                {item.name}
+                                Book Consultation
                             </Link>
-                        ))}
-                        <Link
-                            href="/book-consultation"
-                            className="btn-primary px-6 py-2 rounded-none text-sm inline-block text-center"
-                            onClick={() => setIsMenuOpen(false)}
-                        >
-                            Book Consultation
-                        </Link>
+                        </motion.div>
                     </nav>
-                </div>
+                </motion.div>
             </div>
-        </header>
+        </motion.header>
     );
 }
